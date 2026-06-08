@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Kuis: Gagasan Pokok | Ekonomi Kreatif & UMKM</title>
+    <!-- SQL.js (WebAssembly) untuk SQLite di browser -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Roboto', 'Poppins', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #e0f2e9 0%, #c8e0d4 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .quiz-app {
+            max-width: 1200px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.35);
+            overflow: hidden;
+        }
+        .app-header {
+            background: #2b5e3b;
+            padding: 1.2rem 2rem;
+            color: white;
+            background-image: linear-gradient(135deg, #2b5e3b, #3f8c55);
+        }
+        .app-header h1 {
+            margin: 0;
+            font-size: 1.7rem;
+            font-weight: 700;
+        }
+        .app-header p {
+            margin: 0.3rem 0 0;
+            opacity: 0.9;
+            font-size: 0.85rem;
+        }
+        .reading-panel {
+            background: #f8fef5;
+            border-bottom: 3px solid #5fa86f;
+            padding: 1.4rem 2rem;
+            font-size: 0.96rem;
+            line-height: 1.65;
+            color: #1e3a2a;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Georgia', 'Times New Roman', serif;
+        }
+        .reading-panel h3 {
+            margin: 0 0 12px 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2b5e3b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .reading-content p {
+            margin: 0 0 14px 0;
+            text-align: justify;
+        }
+        .reading-content strong {
+            color: #3f8c55;
+        }
+        .quiz-main {
+            padding: 1.8rem 2rem 1.5rem;
+            min-height: 500px;
+        }
+        .question-card {
+            background: #fefef9;
+            border-radius: 1.5rem;
+            padding: 1.5rem 1.8rem;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.05);
+            border: 1px solid #cde0cd;
+            margin-bottom: 1.5rem;
+        }
+        .question-text {
+            font-size: 1.3rem;
+            font-weight: 650;
+            line-height: 1.4;
+            color: #2b5e3b;
+            margin-bottom: 1.6rem;
+        }
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+        .option-item {
+            background: #fbfef9;
+            border-radius: 1rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d4e8d4;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .option-item:hover {
+            background: #eaf5ea;
+            border-color: #5fa86f;
+        }
+        input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #3f8c55;
+            cursor: pointer;
+            margin: 0;
+            flex-shrink: 0;
+        }
+        .option-label {
+            font-size: 0.98rem;
+            color: #2a4632;
+            font-weight: 500;
+            cursor: pointer;
+            flex: 1;
+            line-height: 1.4;
+        }
+        .btn-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #517a5e;
+            border: none;
+            padding: 0.7rem 1.8rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover:not(:disabled) {
+            background: #3a5f48;
+            transform: translateY(-1px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .submit-btn {
+            background: #3f8c55;
+        }
+        .submit-btn:hover:not(:disabled) {
+            background: #2e6b41;
+        }
+        .reset-btn {
+            background: #8e6e4b;
+        }
+        .reset-btn:hover {
+            background: #72593b;
+        }
+        .info-area {
+            background: #eef5ea;
+            border-radius: 1.2rem;
+            padding: 0.8rem 1.5rem;
+            margin-top: 1.4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .status-badge {
+            font-weight: 500;
+            background: #d4e8d4;
+            padding: 5px 14px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            color: #2b5e3b;
+        }
+        .score-area {
+            font-weight: bold;
+            background: #2b5e3b;
+            color: white;
+            padding: 5px 14px;
+            border-radius: 40px;
+        }
+        .result-panel {
+            background: #f4faf0;
+            border-radius: 1.5rem;
+            padding: 1.4rem;
+            margin-top: 1.8rem;
+            border-left: 6px solid #5fa86f;
+        }
+        .answers-review {
+            max-height: 450px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+        .review-item {
+            border-bottom: 1px solid #cde0cd;
+            padding: 0.8rem 0;
+        }
+        .correct {
+            color: #2e6b41;
+            font-weight: bold;
+        }
+        .wrong {
+            color: #c25d4a;
+            font-weight: bold;
+        }
+        footer {
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 1rem;
+            background: #eef5ea;
+            color: #5f7e6b;
+            border-top: 1px solid #cde0cd;
+        }
+        @media (max-width: 620px) {
+            .quiz-main { padding: 1.2rem; }
+            .reading-panel { padding: 1rem; }
+            .question-text { font-size: 1.1rem; }
+            .option-label { font-size: 0.85rem; }
+            button { padding: 0.5rem 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="quiz-app" id="quizApp">
+    <div class="app-header">
+        <h1>💡 Kuis: Gagasan Pokok & Ekonomi Kreatif</h1>
+        <p>Bahasa Indonesia | Menentukan Ide Utama, Fakta, Opini, dan Simpulan Teks</p>
+    </div>
+
+    <!-- TEKS BACAAN BARU: EKONOMI KREATIF DAN PEMBERDAYAAN UMKM -->
+    <div class="reading-panel" id="readingSource">
+        <h3>📖 Teks Bacaan: "Ekonomi Kreatif: Peluang Emas bagi UMKM Indonesia"</h3>
+        <div class="reading-content">
+            <p><strong>Paragraf 1:</strong> 
+            Ekonomi kreatif telah menjadi sektor unggulan yang mampu menopang perekonomian nasional di tengah ketidakpastian global. Bidang seperti kuliner, fesyen, kriya, desain, dan aplikasi digital memberikan kontribusi signifikan terhadap produk domestik bruto (PDB) serta menyerap jutaan tenaga kerja. Gagasan pokok dari berkembangnya ekonomi kreatif adalah pemanfaatan ide, kreativitas, dan sumber daya manusia yang inovatif untuk menciptakan nilai tambah ekonomi. Indonesia dengan keberagaman budaya dan sumber daya alam memiliki potensi luar biasa untuk menjadi pusat ekonomi kreatif dunia.
+            </p>
+            <p><strong>Paragraf 2:</strong>
+            Usaha Mikro, Kecil, dan Menengah (UMKM) merupakan tulang punggung ekonomi kreatif di Indonesia. Lebih dari 90% pelaku usaha di Indonesia adalah UMKM, dan sebagian besar bergerak di sektor kreatif. Dengan memanfaatkan platform digital seperti e-commerce dan media sosial, UMKM dapat memperluas pasar hingga ke mancanegara. Ide utama dari paragraf ini adalah bahwa UMKM memiliki peran strategis dalam ekonomi kreatif, terutama dengan dukungan transformasi digital yang memungkinkan mereka bersaing secara global. Pemerintah pun terus mendorong digitalisasi UMKM melalui berbagai program pelatihan dan bantuan permodalan.
+            </p>
+            <p><strong>Paragraf 3:</strong>
+            Namun, pengembangan ekonomi kreatif masih menghadapi sejumlah tantangan berat. Banyak pelaku UMKM yang belum melek teknologi, kesulitan akses permodalan, serta kurangnya perlindungan hak kekayaan intelektual (HAKI) atas produk kreatif mereka. Gagasan pokok paragraf ini adalah bahwa meskipun potensi ekonomi kreatif besar, masih terdapat hambatan seperti literasi digital rendah, keterbatasan modal, dan minimnya kesadaran HAKI yang perlu diatasi secara serius. Jika tantangan ini dibiarkan, pertumbuhan sektor kreatif akan terhambat.
+            </p>
+            <p><strong>Paragraf 4:</strong>
+            Kesimpulannya, ekonomi kreatif adalah masa depan perekonomian Indonesia yang inklusif dan berkelanjutan. Diperlukan kolaborasi antara pemerintah, pelaku usaha, akademisi, dan masyarakat untuk mengatasi kendala yang ada. Generasi muda sebagai agen perubahan diharapkan mampu menciptakan inovasi berbasis kearifan lokal yang bernilai jual tinggi. Dengan sinergi yang kuat, ekonomi kreatif tidak hanya meningkatkan kesejahteraan tetapi juga memperkuat identitas budaya bangsa di mata dunia.
+            </p>
+        </div>
+    </div>
+
+    <div class="quiz-main" id="mainContent">Memuat soal interaktif tentang gagasan pokok...</div>
+    <footer>🎯 Fokus: Gagasan Pokok, Ide Utama, Simpulan | Teks "Ekonomi Kreatif & UMKM" | Kumpulkan skor akhir setelah menjawab semua soal</footer>
+</div>
+
+<script>
+    // ======================= SOAL GAGASAN POKOK - EKONOMI KREATIF =======================
+    const questionsData = [
+        { // Soal 1 - gagasan pokok paragraf 1
+            id: 1,
+            text: "1. Gagasan pokok paragraf pertama teks 'Ekonomi Kreatif: Peluang Emas bagi UMKM Indonesia' adalah ...",
+            opt_a: "A. Ekonomi kreatif hanya berkaitan dengan kuliner dan fesyen.",
+            opt_b: "B. Ekonomi kreatif menjadi sektor unggulan yang memanfaatkan ide dan kreativitas untuk menciptakan nilai tambah ekonomi, serta memiliki potensi besar di Indonesia.",
+            opt_c: "C. Indonesia tidak memiliki potensi di bidang ekonomi kreatif.",
+            opt_d: "D. PDB Indonesia turun karena ekonomi kreatif.",
+            opt_e: "E. Ekonomi kreatif hanya menguntungkan negara maju.",
+            correct: "B"
+        },
+        { // Soal 2 - ide utama paragraf 2 (UMKM & digital)
+            id: 2,
+            text: "2. Ide utama paragraf kedua adalah ...",
+            opt_a: "A. UMKM tidak penting dalam perekonomian Indonesia.",
+            opt_b: "B. UMKM sebagai tulang punggung ekonomi kreatif memiliki peran strategis, terutama dengan dukungan digitalisasi untuk bersaing global.",
+            opt_c: "C. Semua UMKM sudah go international tanpa kendala.",
+            opt_d: "D. Pemerintah melarang UMKM menggunakan e-commerce.",
+            opt_e: "E. Hanya UMKM di kota besar yang berkembang.",
+            correct: "B"
+        },
+        { // Soal 3 - gagasan pokok paragraf 3 (tantangan)
+            id: 3,
+            text: "3. Gagasan pokok paragraf ketiga adalah ...",
+            opt_a: "A. Ekonomi kreatif sudah berhasil tanpa hambatan.",
+            opt_b: "B. Pengembangan ekonomi kreatif menghadapi tantangan seperti rendahnya literasi digital, akses modal, dan kurangnya perlindungan HAKI.",
+            opt_c: "C. Semua pelaku UMKM sudah sangat melek teknologi.",
+            opt_d: "D. HAKI tidak penting bagi produk kreatif.",
+            opt_e: "E. Pemerintah mengabaikan sektor UMKM sepenuhnya.",
+            correct: "B"
+        },
+        { // Soal 4 - simpulan seluruh teks
+            id: 4,
+            text: "4. Simpulan yang paling tepat berdasarkan keseluruhan teks di atas adalah ...",
+            opt_a: "A. Ekonomi kreatif adalah ancaman bagi budaya lokal.",
+            opt_b: "B. Ekonomi kreatif merupakan masa depan ekonomi Indonesia yang inklusif dan berkelanjutan, membutuhkan kolaborasi semua pihak untuk mengatasi tantangan.",
+            opt_c: "C. UMKM tidak perlu berkolaborasi dengan pemerintah.",
+            opt_d: "D. Generasi muda tidak memiliki peran dalam ekonomi kreatif.",
+            opt_e: "E. Ekonomi kreatif hanya bertahan sebentar.",
+            correct: "B"
+        },
+        { // Soal 5 - fakta dalam teks
+            id: 5,
+            text: "5. Berdasarkan teks, berapa persen pelaku usaha di Indonesia yang merupakan UMKM?",
+            opt_a: "A. Sekitar 50%",
+            opt_b: "B. Lebih dari 75%",
+            opt_c: "C. Lebih dari 90%",
+            opt_d: "D. Kurang dari 30%",
+            opt_e: "E. Tepat 100%",
+            correct: "C"
+        },
+        { // Soal 6 - gagasan pokok tentang peran generasi muda
+            id: 6,
+            text: "6. Menurut paragraf keempat, peran generasi muda dalam ekonomi kreatif adalah ...",
+            opt_a: "A. Menunggu bantuan dari pemerintah tanpa berinovasi.",
+            opt_b: "B. Menciptakan inovasi berbasis kearifan lokal yang bernilai jual tinggi sebagai agen perubahan.",
+            opt_c: "C. Meninggalkan semua produk tradisional.",
+            opt_d: "D. Hanya bekerja di luar negeri.",
+            opt_e: "E. Menolak menggunakan teknologi digital.",
+            correct: "B"
+        },
+        { // Soal 7 - tantangan ekonomi kreatif (HAKI)
+            id: 7,
+            text: "7. Salah satu tantangan yang disebutkan dalam teks terkait hak kekayaan intelektual (HAKI) adalah ...",
+            opt_a: "A. Perlindungan HAKI sudah sangat baik di Indonesia.",
+            opt_b: "B. Kurangnya perlindungan HAKI atas produk kreatif pelaku UMKM.",
+            opt_c: "C. HAKI tidak ada hubungannya dengan ekonomi kreatif.",
+            opt_d: "D. Semua produk UMKM sudah terdaftar HAKI.",
+            opt_e: "E. HAKI hanya untuk perusahaan besar.",
+            correct: "B"
+        },
+        { // Soal 8 - gagasan pokok kolaborasi
+            id: 8,
+            text: "8. Gagasan pokok yang terdapat pada paragraf keempat tentang solusi pengembangan ekonomi kreatif adalah ...",
+            opt_a: "A. Hanya pemerintah yang bertanggung jawab.",
+            opt_b: "B. Diperlukan kolaborasi antara pemerintah, pelaku usaha, akademisi, dan masyarakat serta peran aktif generasi muda.",
+            opt_c: "C. Ekonomi kreatif tidak membutuhkan sinergi.",
+            opt_d: "D. Generasi muda dilarang berkarya.",
+            opt_e: "E. Akademisi tidak dilibatkan dalam ekonomi kreatif.",
+            correct: "B"
+        },
+        { // Soal 9 - pernyataan sesuai isi teks (fakta atau opini)
+            id: 9,
+            text: "9. Manakah pernyataan yang SESUAI dengan isi teks bacaan?",
+            opt_a: "A. Ekonomi kreatif tidak memberikan kontribusi pada PDB Indonesia.",
+            opt_b: "B. Dengan transformasi digital, UMKM dapat memperluas pasar hingga ke mancanegara.",
+            opt_c: "C. Pemerintah tidak menyediakan program pelatihan untuk UMKM.",
+            opt_d: "D. Literasi digital pelaku UMKM sudah sangat tinggi tanpa masalah.",
+            opt_e: "E. Ekonomi kreatif hanya menguntungkan segelintir orang.",
+            correct: "B"
+        },
+        { // Soal 10 - gagasan pokok paragraf 2 (alternatif)
+            id: 10,
+            text: "10. Gagasan pokok yang tepat dari paragraf kedua tentang UMKM dan digitalisasi adalah ...",
+            opt_a: "A. UMKM adalah sektor yang lemah dan tidak berkembang.",
+            opt_b: "B. UMKM sebagai tulang punggung ekonomi kreatif mendapat peluang besar melalui platform digital dan didukung program pemerintah.",
+            opt_c: "C. Digitalisasi merugikan UMKM tradisional.",
+            opt_d: "D. UMKM dilarang menggunakan e-commerce.",
+            opt_e: "E. Pemasaran digital tidak efektif untuk UMKM.",
+            correct: "B"
+        }
+    ];
+
+    // ======================= SQLITE & LOGIKA KUIS =======================
+    let db = null;
+    let allQuestions = [];
+    let totalQuestions = 0;
+    let currentIndex = 0;
+    let userSelections = [];
+    let quizCompleted = false;
+
+    async function initQuiz() {
+        const SQL = await initSqlJs({ 
+            locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.wasm` 
+        });
+        db = new SQL.Database();
+        
+        db.run(`CREATE TABLE questions (
+            id INTEGER PRIMARY KEY,
+            qtext TEXT,
+            opt_a TEXT, opt_b TEXT, opt_c TEXT, opt_d TEXT, opt_e TEXT,
+            correct_letter TEXT
+        )`);
+        
+        const insert = db.prepare(`INSERT INTO questions (id, qtext, opt_a, opt_b, opt_c, opt_d, opt_e, correct_letter) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+        
+        for (let q of questionsData) {
+            insert.run([q.id, q.text, q.opt_a, q.opt_b, q.opt_c, q.opt_d, q.opt_e || "", q.correct]);
+        }
+        insert.free();
+        
+        const res = db.exec("SELECT id, qtext, opt_a, opt_b, opt_c, opt_d, opt_e, correct_letter FROM questions ORDER BY id");
+        if (res.length && res[0].values) {
+            allQuestions = res[0].values.map(row => ({
+                id: row[0],
+                text: row[1],
+                opt_a: row[2], opt_b: row[3], opt_c: row[4], opt_d: row[5], opt_e: row[6],
+                correct: row[7]
+            }));
+        }
+        totalQuestions = allQuestions.length;
+        userSelections = allQuestions.map(q => ({ qid: q.id, selected: null, isCorrect: false }));
+        renderCurrentQuestion();
+    }
+
+    function countAnswered() {
+        return userSelections.filter(s => s.selected !== null).length;
+    }
+
+    function saveCurrentAnswer(letter) {
+        const q = allQuestions[currentIndex];
+        const idx = userSelections.findIndex(s => s.qid === q.id);
+        if (idx !== -1) {
+            const isCorrect = (letter === q.correct);
+            userSelections[idx] = { qid: q.id, selected: letter, isCorrect: isCorrect };
+        }
+        updateInfoBar();
+    }
+
+    function updateInfoBar() {
+        const infoSpan = document.getElementById('liveScoreInfo');
+        if (infoSpan) infoSpan.innerText = `📋 Terjawab: ${countAnswered()}/${totalQuestions}`;
+        const progSpan = document.getElementById('progressText');
+        if (progSpan) progSpan.innerText = `Soal ${currentIndex+1} | ${countAnswered()}/${totalQuestions} dijawab`;
+    }
+
+    function finishAndShowResult() {
+        quizCompleted = true;
+        let correctCount = userSelections.filter(s => s.isCorrect === true).length;
+        let percent = Math.round((correctCount / totalQuestions) * 100);
+        
+        let reviewHtml = `<div class="answers-review">`;
+        for (let i = 0; i < allQuestions.length; i++) {
+            const q = allQuestions[i];
+            const user = userSelections.find(s => s.qid === q.id);
+            const userLetter = user?.selected || "(Tidak dijawab)";
+            const isUserCorrect = user?.isCorrect || false;
+            const correctLetter = q.correct;
+            
+            let correctText = "";
+            if (correctLetter === 'A') correctText = q.opt_a;
+            else if (correctLetter === 'B') correctText = q.opt_b;
+            else if (correctLetter === 'C') correctText = q.opt_c;
+            else if (correctLetter === 'D') correctText = q.opt_d;
+            else if (correctLetter === 'E') correctText = q.opt_e;
+            
+            let userChoiceText = "";
+            if (userLetter === 'A') userChoiceText = q.opt_a;
+            else if (userLetter === 'B') userChoiceText = q.opt_b;
+            else if (userLetter === 'C') userChoiceText = q.opt_c;
+            else if (userLetter === 'D') userChoiceText = q.opt_d;
+            else if (userLetter === 'E') userChoiceText = q.opt_e;
+            
+            const statusIcon = isUserCorrect ? '✅' : '❌';
+            reviewHtml += `
+                <div class="review-item">
+                    <strong>Soal ${q.id}. ${escapeHtml(q.text.substring(0, 130))}${q.text.length > 130 ? '...' : ''}</strong><br>
+                    ${statusIcon} Jawaban Anda: ${userLetter} - ${escapeHtml(userChoiceText || 'kosong')}<br>
+                    <span class="${isUserCorrect ? 'correct' : 'wrong'}">
+                        ${isUserCorrect ? '✔ Benar' : '✘ Salah'} (Kunci: ${correctLetter} → ${escapeHtml(correctText || '')})
+                    </span>
+                </div>
+            `;
+        }
+        reviewHtml += `</div>`;
+        
+        const finalHtml = `
+            <div class="result-panel">
+                <h3>📊 Hasil Akhir Kuis "Gagasan Pokok & Ekonomi Kreatif"</h3>
+                <p>Skor: <strong>${correctCount} / ${totalQuestions}</strong> (${percent}%)</p>
+                <p>📌 Rincian jawaban dan pembahasan gagasan pokok:</p>
+                ${reviewHtml}
+                <hr>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button id="restartQuizBtn" class="reset-btn">🔄 Kerjakan Ulang Kuis</button>
+                </div>
+            </div>
+        `;
+        const mainDiv = document.getElementById('mainContent');
+        mainDiv.innerHTML = finalHtml;
+        
+        const restartBtn = document.getElementById('restartQuizBtn');
+        if (restartBtn) restartBtn.addEventListener('click', () => resetQuiz());
+        
+        const progSpan = document.getElementById('progressText');
+        if (progSpan) progSpan.innerText = `Selesai | Skor: ${correctCount}/${totalQuestions}`;
+    }
+
+    function resetQuiz() {
+        quizCompleted = false;
+        currentIndex = 0;
+        userSelections = allQuestions.map(q => ({ qid: q.id, selected: null, isCorrect: false }));
+        renderCurrentQuestion();
+    }
+
+    function renderCurrentQuestion() {
+        if (quizCompleted) return;
+        
+        if (countAnswered() === totalQuestions && totalQuestions > 0) {
+            finishAndShowResult();
+            return;
+        }
+        
+        if (currentIndex >= totalQuestions) {
+            currentIndex = 0;
+        }
+        
+        const q = allQuestions[currentIndex];
+        const currentSaved = userSelections.find(s => s.qid === q.id);
+        const selectedVal = currentSaved ? currentSaved.selected : null;
+        
+        const opts = [
+            { letter: 'A', text: q.opt_a },
+            { letter: 'B', text: q.opt_b },
+            { letter: 'C', text: q.opt_c },
+            { letter: 'D', text: q.opt_d }
+        ];
+        if (q.opt_e && q.opt_e.trim() !== "") opts.push({ letter: 'E', text: q.opt_e });
+        
+        let optionsHtml = '';
+        for (let opt of opts) {
+            const checkedAttr = (selectedVal === opt.letter) ? 'checked' : '';
+            optionsHtml += `
+                <div class="option-item" data-letter="${opt.letter}">
+                    <input type="radio" name="questionOption" value="${opt.letter}" id="opt_${opt.letter}" ${checkedAttr}>
+                    <label class="option-label" for="opt_${opt.letter}">${escapeHtml(opt.text)}</label>
+                </div>
+            `;
+        }
+        
+        const mainHtml = `
+            <div class="question-card">
+                <div class="question-text">${escapeHtml(q.text)}</div>
+                <div class="options-list" id="optionsContainer">
+                    ${optionsHtml}
+                </div>
+            </div>
+            <div class="btn-group">
+                <button id="prevBtn" ${currentIndex === 0 ? 'disabled' : ''}>◀ Sebelumnya</button>
+                <button id="nextBtn" class="submit-btn">Berikutnya ▶</button>
+                <button id="resetMidBtn" class="reset-btn">⟳ Reset Kuis</button>
+                <button id="submitAllBtn" class="submit-btn" style="background:#3f8c55;">📊 Submit & Lihat Skor</button>
+            </div>
+            <div class="info-area">
+                <span class="status-badge" id="progressText">Soal ${currentIndex+1} dari ${totalQuestions}</span>
+                <span class="score-area" id="liveScoreInfo">📋 Terjawab: ${countAnswered()}/${totalQuestions}</span>
+            </div>
+        `;
+        
+        const mainDiv = document.getElementById('mainContent');
+        mainDiv.innerHTML = mainHtml;
+        
+        const radios = document.querySelectorAll('input[name="questionOption"]');
+        radios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                saveCurrentAnswer(e.target.value);
+                updateInfoBar();
+            });
+        });
+        
+        const prevBtn = document.getElementById('prevBtn');
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    renderCurrentQuestion();
+                }
+            });
+        }
+        
+        const nextBtn = document.getElementById('nextBtn');
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                const currQ = allQuestions[currentIndex];
+                const userAns = userSelections.find(s => s.qid === currQ.id);
+                if (!userAns || !userAns.selected) {
+                    alert("⚠️ Silakan pilih jawaban terlebih dahulu sebelum melanjutkan.");
+                    return;
+                }
+                if (currentIndex + 1 < totalQuestions) {
+                    currentIndex++;
+                    renderCurrentQuestion();
+                } else {
+                    if (countAnswered() === totalQuestions) {
+                        finishAndShowResult();
+                    } else {
+                        alert(`Masih ada ${totalQuestions - countAnswered()} soal yang belum dijawab. Silakan selesaikan semua soal terlebih dahulu.`);
+                        const firstEmpty = userSelections.findIndex(s => s.selected === null);
+                        if (firstEmpty !== -1) {
+                            currentIndex = firstEmpty;
+                            renderCurrentQuestion();
+                        }
+                    }
+                }
+            });
+        }
+        
+        const resetMid = document.getElementById('resetMidBtn');
+        if (resetMid) resetMid.addEventListener('click', () => resetQuiz());
+        
+        const submitAll = document.getElementById('submitAllBtn');
+        if (submitAll) {
+            submitAll.addEventListener('click', () => {
+                const unanswered = totalQuestions - countAnswered();
+                if (unanswered > 0) {
+                    if (confirm(`⚠️ Anda masih memiliki ${unanswered} soal yang belum dijawab. Lanjutkan? (Soal kosong akan dianggap salah)`)) {
+                        finishAndShowResult();
+                    }
+                } else {
+                    finishAndShowResult();
+                }
+            });
+        }
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    initQuiz().catch(e => {
+        console.error(e);
+        document.getElementById('mainContent').innerHTML = '<div style="padding:2rem;color:#c25d4a;">Gagal memuat database kuis. Silakan refresh halaman.</div>';
+    });
+</script>
+</body>
+</html>
